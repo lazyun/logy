@@ -11,6 +11,7 @@ type levelMapping struct {
 	Warning nullFunc
 	Error   nullFunc
 	Fatal   nullFunc
+	Unified nullFunc
 }
 
 type traceRoot struct {
@@ -55,29 +56,43 @@ var (
 		Warning: func(i ...interface{}) {},
 		Error:   func(i ...interface{}) {},
 		Fatal:   func(i ...interface{}) {},
+		Unified: func(i ...interface{}) {},
+	}
+
+	levelString = map[logLevel]string{
+		0: "Debug",
+		1: "Info",
+		2: "Warning",
+		3: "Error",
+		4: "Fatal",
 	}
 
 	occurLev = Error
 	outLev   = Info
 )
-func RegisterDebug(debug func(...interface{})) {
+
+func RegisterDebug(debug nullFunc) {
 	lm.Debug = debug
 }
 
-func RegisterWarn(warn func(...interface{})) {
+func RegisterWarn(warn nullFunc) {
 	lm.Warning = warn
 }
 
-func RegisterInfo(info func(...interface{})) {
+func RegisterInfo(info nullFunc) {
 	lm.Info = info
 }
 
-func RegisterErr(err func(...interface{})) {
+func RegisterErr(err nullFunc) {
 	lm.Error = err
 }
 
-func RegisterFatal(fatal func(...interface{})) {
+func RegisterFatal(fatal nullFunc) {
 	lm.Fatal = fatal
+}
+
+func RegisterUnified(unified nullFunc)  {
+	lm.Unified = unified
 }
 
 func SetGlobalTrigger(occurLevel, outLevel logLevel) {
@@ -194,36 +209,33 @@ func CatchInfo(ctx context.Context) {
 	for _, value := range (*rootCallStack).DoList {
 		level := value[0].(logLevel)
 
-		if level < nowOutLev {
+		d := value
+		d[0] = levelString[level]
+
+		if level >= nowOutLev {
+			lm.Unified(d...)
 			continue
 		}
-
-		d := value
 
 		switch level {
 		case Debug:
 			{
-				d[0] = "Debug"
 				lm.Debug(d...)
 			}
 		case Info:
 			{
-				d[0] = "Info"
 				lm.Info(d...)
 			}
 		case Warning:
 			{
-				d[0] = "Warning"
 				lm.Warning(d...)
 			}
 		case Error:
 			{
-				d[0] = "Error"
 				lm.Error(d...)
 			}
 		case Fatal:
 			{
-				d[0] = "Fatal"
 				lm.Fatal(d...)
 			}
 		}

@@ -12,6 +12,7 @@ func init() {
 	RegisterWarn(fff)
 	RegisterErr(fff)
 	RegisterFatal(fff)
+	RegisterUnified(fff)
 }
 
 func fff(a ...interface{}) {
@@ -20,7 +21,7 @@ func fff(a ...interface{}) {
 
 func AAA(ctx context.Context) {
 	ctx = SetFuncSignal(ctx, "A")
-	//SetLocalTrigger(ctx, Error, Debug)
+	SetLocalTrigger(ctx, Error, Debug)
 	defer CatchInfo(ctx)
 	Log(ctx, Info, "Begin A. %s", "la~la~la~")
 	B(ctx)
