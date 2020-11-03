@@ -23,6 +23,7 @@ func AAA(ctx context.Context) {
 	ctx = SetFuncSignal(ctx, "A")
 	SetLocalTrigger(ctx, Error, Debug)
 	defer CatchInfo(ctx)
+	Log(ctx, Debug)
 	Log(ctx, Info, "Begin A. %s", "la~la~la~")
 	B(ctx)
 	Log(ctx, Warning, "End A. %s", "biu~biu~biu~")

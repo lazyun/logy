@@ -32,9 +32,11 @@ type traceInfo struct {
 }
 
 type nullFunc func(i ...interface{})
+type FormatLog func(fields LogFields, args ...interface{}) []interface{}
 
 type ctxKey string
 type logLevel int
+type LogFields []interface{}
 
 const (
 	offset = 2
@@ -69,7 +71,26 @@ var (
 
 	occurLev = Error
 	outLev   = Info
+
+	formatFunc FormatLog = func(fields LogFields, args ...interface{}) []interface{} {
+		if 0 != len(args) {
+			args[0] = fmt.Sprintf("[%s] %v", fields[1], args[0])
+		}
+
+		if 0 != len(args) {
+			args[0] = fmt.Sprintf("[%s] %v", fields[1], args[0])
+			return append([]interface{}{fields[0]}, args...)
+		} else {
+			return append([]interface{}{fields[0]}, fmt.Sprintf("[%s]", fields[1]))
+		}
+	}
+
+	_ LogFields = []interface{}{Info, "title"}
 )
+
+func RegisterLogFormat(f FormatLog) {
+	formatFunc = f
+}
 
 func RegisterDebug(debug nullFunc) {
 	lm.Debug = debug
@@ -91,7 +112,7 @@ func RegisterFatal(fatal nullFunc) {
 	lm.Fatal = fatal
 }
 
-func RegisterUnified(unified nullFunc)  {
+func RegisterUnified(unified nullFunc) {
 	lm.Unified = unified
 }
 
@@ -168,14 +189,15 @@ func Log(ctx context.Context, level logLevel, args ...interface{}) {
 		(*rootCallStack).MaxLevel = level
 	}
 
-	var value []interface{}
-	value = append(value, level)
+	//var value = []interface{}{level}
+	//if 0 != len(args) {
+	//	args[0] = fmt.Sprintf("[%s] %v", subCallStack.Title, args[0])
+	//	value = append(value, args...)
+	//} else {
+	//	value = append(value, fmt.Sprintf("[%s]", subCallStack.Title))
+	//}
 
-	if 0 != len(args) {
-		args[0] = fmt.Sprintf("[%s] %v", subCallStack.Title, args[0])
-	}
-
-	value = append(value, args...)
+	var value = formatFunc(LogFields{level, subCallStack.Title}, args...)
 
 	(*rootCallStack).DoList = append((*rootCallStack).DoList, value)
 }
