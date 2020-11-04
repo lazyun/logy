@@ -189,7 +189,7 @@ func Log(ctx context.Context, level logLevel, args ...interface{}) {
 		(*rootCallStack).MaxLevel = level
 	}
 
-	//var value = []interface{}{level}
+	var value = []interface{}{level}
 	//if 0 != len(args) {
 	//	args[0] = fmt.Sprintf("[%s] %v", subCallStack.Title, args[0])
 	//	value = append(value, args...)
@@ -197,7 +197,7 @@ func Log(ctx context.Context, level logLevel, args ...interface{}) {
 	//	value = append(value, fmt.Sprintf("[%s]", subCallStack.Title))
 	//}
 
-	var value = formatFunc(LogFields{level, subCallStack.Title}, args...)
+	value = append(value, formatFunc(LogFields{levelString[level], subCallStack.Title}, args...)...)
 
 	(*rootCallStack).DoList = append((*rootCallStack).DoList, value)
 }
@@ -235,30 +235,30 @@ func CatchInfo(ctx context.Context) {
 		d[0] = levelString[level]
 
 		if level >= nowOutLev {
-			lm.Unified(d...)
+			lm.Unified(d[1:]...)
 			continue
 		}
 
 		switch level {
 		case Debug:
 			{
-				lm.Debug(d...)
+				lm.Debug(d[1:]...)
 			}
 		case Info:
 			{
-				lm.Info(d...)
+				lm.Info(d[1:]...)
 			}
 		case Warning:
 			{
-				lm.Warning(d...)
+				lm.Warning(d[1:]...)
 			}
 		case Error:
 			{
-				lm.Error(d...)
+				lm.Error(d[1:]...)
 			}
 		case Fatal:
 			{
-				lm.Fatal(d...)
+				lm.Fatal(d[1:]...)
 			}
 		}
 
