@@ -14,6 +14,15 @@ type levelMapping struct {
 	Unified nullFunc
 }
 
+type levelMappingFormat struct {
+	Debug   nullFuncF
+	Info    nullFuncF
+	Warning nullFuncF
+	Error   nullFuncF
+	Fatal   nullFuncF
+	Unified nullFuncF
+}
+
 type traceRoot struct {
 	Title    string
 	MaxLevel logLevel
@@ -31,8 +40,11 @@ type traceInfo struct {
 	DoList [][]interface{}
 }
 
-type nullFunc func(i ...interface{})
+type nullFunc func(...interface{})
+type nullFuncF func(string, ...interface{})
+
 type FormatLog func(fields LogFields, args ...interface{}) []interface{}
+type FormatLogF func(fields LogFields, format string, args ...interface{}) (string, []interface{})
 
 type ctxKey string
 type logLevel int
@@ -49,6 +61,9 @@ const (
 	Warning logLevel = 2
 	Error   logLevel = 3
 	Fatal   logLevel = 4
+
+	logTypeSprint int = iota
+	logTypeSprintF
 )
 
 var (
@@ -59,6 +74,15 @@ var (
 		Error:   func(i ...interface{}) {},
 		Fatal:   func(i ...interface{}) {},
 		Unified: func(i ...interface{}) {},
+	}
+
+	lmf = levelMappingFormat{
+		Debug:   func(f string, i ...interface{}) {},
+		Info:    func(f string, i ...interface{}) {},
+		Warning: func(f string, i ...interface{}) {},
+		Error:   func(f string, i ...interface{}) {},
+		Fatal:   func(f string, i ...interface{}) {},
+		Unified: func(f string, i ...interface{}) {},
 	}
 
 	levelString = map[logLevel]string{
@@ -85,6 +109,10 @@ var (
 		}
 	}
 
+	formatFuncF FormatLogF = func(fields LogFields, format string, args ...interface{}) (string, []interface{}) {
+		return fmt.Sprintf("%v [%s] %v", fields[0], fields[1], format), args
+	}
+
 	_ LogFields = []interface{}{Info, "title"}
 )
 
@@ -92,28 +120,56 @@ func RegisterLogFormat(f FormatLog) {
 	formatFunc = f
 }
 
+func RegisterLogFormatF(f FormatLogF) {
+	formatFuncF = f
+}
+
 func RegisterDebug(debug nullFunc) {
 	lm.Debug = debug
+}
+
+func RegisterDebugF(debug nullFuncF) {
+	lmf.Debug = debug
 }
 
 func RegisterWarn(warn nullFunc) {
 	lm.Warning = warn
 }
 
+func RegisterWarnF(warn nullFuncF) {
+	lmf.Warning = warn
+}
+
 func RegisterInfo(info nullFunc) {
 	lm.Info = info
+}
+
+func RegisterInfoF(info nullFuncF) {
+	lmf.Info = info
 }
 
 func RegisterErr(err nullFunc) {
 	lm.Error = err
 }
 
+func RegisterErrF(err nullFuncF) {
+	lmf.Error = err
+}
+
 func RegisterFatal(fatal nullFunc) {
 	lm.Fatal = fatal
 }
 
+func RegisterFatalF(fatal nullFuncF) {
+	lmf.Fatal = fatal
+}
+
 func RegisterUnified(unified nullFunc) {
 	lm.Unified = unified
+}
+
+func RegisterUnifiedF(unified nullFuncF) {
+	lmf.Unified = unified
 }
 
 func SetGlobalTrigger(occurLevel, outLevel logLevel) {
@@ -189,7 +245,7 @@ func Log(ctx context.Context, level logLevel, args ...interface{}) {
 		(*rootCallStack).MaxLevel = level
 	}
 
-	var value = []interface{}{level}
+	var value = []interface{}{level, logTypeSprint}
 	//if 0 != len(args) {
 	//	args[0] = fmt.Sprintf("[%s] %v", subCallStack.Title, args[0])
 	//	value = append(value, args...)
@@ -198,6 +254,40 @@ func Log(ctx context.Context, level logLevel, args ...interface{}) {
 	//}
 
 	value = append(value, formatFunc(LogFields{levelString[level], subCallStack.Title}, args...)...)
+
+	(*rootCallStack).DoList = append((*rootCallStack).DoList, value)
+}
+
+func Logf(ctx context.Context, level logLevel, format string, args ...interface{}) {
+	root := ctx.Value(ctxKeyName)
+	if nil == root {
+		return
+	}
+
+	sub := ctx.Value(ctxSubKeyName)
+	if nil == sub {
+		return
+	}
+
+	rootCallStack := root.(*traceRoot)
+	subCallStack := sub.(traceInfo)
+
+	if level > (*rootCallStack).MaxLevel {
+		(*rootCallStack).MaxLevel = level
+	}
+
+	var (
+		f, a  = formatFuncF(LogFields{levelString[level], subCallStack.Title}, format, args...)
+		value = []interface{}{level, logTypeSprintF, f}
+	)
+	//if 0 != len(args) {
+	//	args[0] = fmt.Sprintf("[%s] %v", subCallStack.Title, args[0])
+	//	value = append(value, args...)
+	//} else {
+	//	value = append(value, fmt.Sprintf("[%s]", subCallStack.Title))
+	//}
+
+	value = append(value, a...)
 
 	(*rootCallStack).DoList = append((*rootCallStack).DoList, value)
 }
@@ -230,35 +320,69 @@ func CatchInfo(ctx context.Context) {
 
 	for _, value := range (*rootCallStack).DoList {
 		level := value[0].(logLevel)
+		logFormatType := value[1].(int)
 
 		d := value
-		d[0] = levelString[level]
+		//d[0] = levelString[level]
 
+		if logTypeSprint == logFormatType {
+			if level >= nowOutLev {
+				lm.Unified(d[2:]...)
+				continue
+			}
+
+			switch level {
+			case Debug:
+				{
+					lm.Debug(d[2:]...)
+				}
+			case Info:
+				{
+					lm.Info(d[2:]...)
+				}
+			case Warning:
+				{
+					lm.Warning(d[2:]...)
+				}
+			case Error:
+				{
+					lm.Error(d[2:]...)
+				}
+			case Fatal:
+				{
+					lm.Fatal(d[2:]...)
+				}
+			}
+
+			return
+		}
+
+		format := fmt.Sprint(d[2])
 		if level >= nowOutLev {
-			lm.Unified(d[1:]...)
+			lmf.Unified(format, d[3:]...)
 			continue
 		}
 
 		switch level {
 		case Debug:
 			{
-				lm.Debug(d[1:]...)
+				lmf.Debug(format, d[3:]...)
 			}
 		case Info:
 			{
-				lm.Info(d[1:]...)
+				lmf.Info(format, d[3:]...)
 			}
 		case Warning:
 			{
-				lm.Warning(d[1:]...)
+				lmf.Warning(format, d[3:]...)
 			}
 		case Error:
 			{
-				lm.Error(d[1:]...)
+				lmf.Error(format, d[3:]...)
 			}
 		case Fatal:
 			{
-				lm.Fatal(d[1:]...)
+				lmf.Fatal(format, d[3:]...)
 			}
 		}
 
