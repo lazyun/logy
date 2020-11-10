@@ -314,9 +314,9 @@ func CatchInfo(ctx context.Context) {
 		nowOutLev = outLev
 	}
 
-	if (*rootCallStack).MaxLevel < nowOccurLev {
-		return
-	}
+	//if (*rootCallStack).MaxLevel < nowOccurLev {
+	//	return
+	//}
 
 	for _, value := range (*rootCallStack).DoList {
 		level := value[0].(logLevel)
