@@ -62,8 +62,8 @@ const (
 	Error   logLevel = 3
 	Fatal   logLevel = 4
 
-	logTypeSprint int = iota
-	logTypeSprintF
+	logTypeSprint  int = 1
+	logTypeSprintF int = 2
 )
 
 var (
