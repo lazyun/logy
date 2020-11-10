@@ -326,7 +326,7 @@ func CatchInfo(ctx context.Context) {
 		//d[0] = levelString[level]
 
 		if logTypeSprint == logFormatType {
-			if level >= nowOutLev {
+			if (*rootCallStack).MaxLevel >= nowOccurLev && level >= nowOutLev {
 				lm.Unified(d[2:]...)
 				continue
 			}
@@ -358,7 +358,7 @@ func CatchInfo(ctx context.Context) {
 		}
 
 		format := fmt.Sprint(d[2])
-		if level >= nowOutLev {
+		if (*rootCallStack).MaxLevel >= nowOccurLev && level >= nowOutLev {
 			lmf.Unified(format, d[3:]...)
 			continue
 		}
