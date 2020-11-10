@@ -354,7 +354,7 @@ func CatchInfo(ctx context.Context) {
 				}
 			}
 
-			return
+			continue
 		}
 
 		format := fmt.Sprint(d[2])
