@@ -99,10 +99,6 @@ var (
 	formatFunc FormatLog = func(fields LogFields, args ...interface{}) []interface{} {
 		if 0 != len(args) {
 			args[0] = fmt.Sprintf("[%s] %v", fields[1], args[0])
-		}
-
-		if 0 != len(args) {
-			args[0] = fmt.Sprintf("[%s] %v", fields[1], args[0])
 			return append([]interface{}{fields[0]}, args...)
 		} else {
 			return append([]interface{}{fields[0]}, fmt.Sprintf("[%s]", fields[1]))
@@ -230,6 +226,7 @@ func SetFuncSignal(ctx context.Context, s string) context.Context {
 func Log(ctx context.Context, level logLevel, args ...interface{}) {
 	root := ctx.Value(ctxKeyName)
 	if nil == root {
+		lmLog(level, formatFunc(LogFields{levelString[level], "-"}, args...)...)
 		return
 	}
 
@@ -261,6 +258,8 @@ func Log(ctx context.Context, level logLevel, args ...interface{}) {
 func Logf(ctx context.Context, level logLevel, format string, args ...interface{}) {
 	root := ctx.Value(ctxKeyName)
 	if nil == root {
+		f, a := formatFuncF(LogFields{levelString[level], "-"}, format, args...)
+		lmfLog(level, f, a...)
 		return
 	}
 
@@ -331,29 +330,7 @@ func CatchInfo(ctx context.Context) {
 				continue
 			}
 
-			switch level {
-			case Debug:
-				{
-					lm.Debug(d[2:]...)
-				}
-			case Info:
-				{
-					lm.Info(d[2:]...)
-				}
-			case Warning:
-				{
-					lm.Warning(d[2:]...)
-				}
-			case Error:
-				{
-					lm.Error(d[2:]...)
-				}
-			case Fatal:
-				{
-					lm.Fatal(d[2:]...)
-				}
-			}
-
+			lmLog(level, d[2:]...)
 			continue
 		}
 
@@ -363,29 +340,57 @@ func CatchInfo(ctx context.Context) {
 			continue
 		}
 
-		switch level {
-		case Debug:
-			{
-				lmf.Debug(format, d[3:]...)
-			}
-		case Info:
-			{
-				lmf.Info(format, d[3:]...)
-			}
-		case Warning:
-			{
-				lmf.Warning(format, d[3:]...)
-			}
-		case Error:
-			{
-				lmf.Error(format, d[3:]...)
-			}
-		case Fatal:
-			{
-				lmf.Fatal(format, d[3:]...)
-			}
-		}
-
+		lmfLog(level, format, d[3:]...)
 		//fmt.Println(nowOutLev, value)
+	}
+}
+
+func lmLog(level logLevel, args ...interface{}) {
+	switch level {
+	case Debug:
+		{
+			lm.Debug(args...)
+		}
+	case Info:
+		{
+			lm.Info(args...)
+		}
+	case Warning:
+		{
+			lm.Warning(args...)
+		}
+	case Error:
+		{
+			lm.Error(args...)
+		}
+	case Fatal:
+		{
+			lm.Fatal(args...)
+		}
+	}
+}
+
+func lmfLog(level logLevel, format string, args ...interface{}) {
+	switch level {
+	case Debug:
+		{
+			lmf.Debug(format, args...)
+		}
+	case Info:
+		{
+			lmf.Info(format, args...)
+		}
+	case Warning:
+		{
+			lmf.Warning(format, args...)
+		}
+	case Error:
+		{
+			lmf.Error(format, args...)
+		}
+	case Fatal:
+		{
+			lmf.Fatal(format, args...)
+		}
 	}
 }

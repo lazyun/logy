@@ -77,3 +77,12 @@ func CF(ctx context.Context) {
 
 	Logf(ctx, Warning, "End CF. %s", "biu~biu~biu~")
 }
+
+func LogImmediately() {
+	Log(context.Background(), Info, "la~la~la~", "biu~biu~biu~")
+}
+
+func LogImmediatelyTitle() {
+	ctx := SetFuncSignal(context.Background(), "LogImmediatelyTitle")
+	Log(ctx, Info, "la~la~la~", "biu~biu~biu~")
+}
