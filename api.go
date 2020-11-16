@@ -3,6 +3,8 @@ package logy
 import (
 	"context"
 	"fmt"
+
+	"github.com/google/uuid"
 )
 
 type levelMapping struct {
@@ -24,6 +26,7 @@ type levelMappingFormat struct {
 }
 
 type traceRoot struct {
+	UUID     string
 	Title    string
 	MaxLevel logLevel
 
@@ -48,11 +51,17 @@ type FormatLogF func(fields LogFields, format string, args ...interface{}) (stri
 
 type ctxKey string
 type logLevel int
-type LogFields []interface{}
+
+type LogFields struct {
+	UUID  string
+	Level string
+	Title string
+}
 
 const (
 	offset = 2
 
+	UUIDKeyName   ctxKey = "uuid"
 	ctxKeyName    ctxKey = "Love"
 	ctxSubKeyName ctxKey = "LoveMe"
 
@@ -98,18 +107,16 @@ var (
 
 	formatFunc FormatLog = func(fields LogFields, args ...interface{}) []interface{} {
 		if 0 != len(args) {
-			args[0] = fmt.Sprintf("[%s] %v", fields[1], args[0])
-			return append([]interface{}{fields[0]}, args...)
+			args[0] = fmt.Sprintf("%s\t[%s] %v", fields.UUID, fields.Title, args[0])
+			return append([]interface{}{fields.Level}, args...)
 		} else {
-			return append([]interface{}{fields[0]}, fmt.Sprintf("[%s]", fields[1]))
+			return append([]interface{}{fields.Level}, fmt.Sprintf("%s\t[%s]", fields.UUID, fields.Title))
 		}
 	}
 
 	formatFuncF FormatLogF = func(fields LogFields, format string, args ...interface{}) (string, []interface{}) {
-		return fmt.Sprintf("%v [%s] %v", fields[0], fields[1], format), args
+		return fmt.Sprintf("%v\t%s\t[%s] %v", fields.Level, fields.UUID, fields.Title, format), args
 	}
-
-	_ LogFields = []interface{}{Info, "title"}
 )
 
 func RegisterLogFormat(f FormatLog) {
@@ -195,7 +202,13 @@ func SetFuncSignal(ctx context.Context, s string) context.Context {
 	if nil == root {
 		nowCallStack.Title = s
 
+		uid := ctx.Value(UUIDKeyName)
+		if nil == uid {
+			uid = uuid.New().String()
+		}
+
 		r := traceRoot{
+			fmt.Sprint(uid),
 			s,
 			Debug,
 			[][]interface{}{},
@@ -226,7 +239,7 @@ func SetFuncSignal(ctx context.Context, s string) context.Context {
 func Log(ctx context.Context, level logLevel, args ...interface{}) {
 	root := ctx.Value(ctxKeyName)
 	if nil == root {
-		lmLog(level, formatFunc(LogFields{levelString[level], "-"}, args...)...)
+		lmLog(level, formatFunc(LogFields{UUID: uuid.New().String(), Level: levelString[level], Title: "-"}, args...)...)
 		return
 	}
 
@@ -250,7 +263,7 @@ func Log(ctx context.Context, level logLevel, args ...interface{}) {
 	//	value = append(value, fmt.Sprintf("[%s]", subCallStack.Title))
 	//}
 
-	value = append(value, formatFunc(LogFields{levelString[level], subCallStack.Title}, args...)...)
+	value = append(value, formatFunc(LogFields{uuid.New().String(), levelString[level], subCallStack.Title}, args...)...)
 
 	(*rootCallStack).DoList = append((*rootCallStack).DoList, value)
 }
@@ -258,7 +271,7 @@ func Log(ctx context.Context, level logLevel, args ...interface{}) {
 func Logf(ctx context.Context, level logLevel, format string, args ...interface{}) {
 	root := ctx.Value(ctxKeyName)
 	if nil == root {
-		f, a := formatFuncF(LogFields{levelString[level], "-"}, format, args...)
+		f, a := formatFuncF(LogFields{uuid.New().String(), levelString[level], "-"}, format, args...)
 		lmfLog(level, f, a...)
 		return
 	}
@@ -276,7 +289,7 @@ func Logf(ctx context.Context, level logLevel, format string, args ...interface{
 	}
 
 	var (
-		f, a  = formatFuncF(LogFields{levelString[level], subCallStack.Title}, format, args...)
+		f, a  = formatFuncF(LogFields{uuid.New().String(), levelString[level], subCallStack.Title}, format, args...)
 		value = []interface{}{level, logTypeSprintF, f}
 	)
 	//if 0 != len(args) {
