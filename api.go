@@ -3,6 +3,7 @@ package logy
 import (
 	"context"
 	"fmt"
+	"runtime"
 
 	"github.com/google/uuid"
 )
@@ -39,8 +40,11 @@ type traceRoot struct {
 }
 
 type traceInfo struct {
-	Title  string
-	DoList [][]interface{}
+	Title    string
+	FuncName string
+	FilePath string
+	Line     int
+	DoList   [][]interface{}
 }
 
 type nullFunc func(...interface{})
@@ -53,9 +57,12 @@ type ctxKey string
 type logLevel int
 
 type LogFields struct {
-	UUID  string
-	Level string
-	Title string
+	UUID     string
+	Level    string
+	Title    string
+	FuncName string
+	FilePath string
+	Line     int
 }
 
 const (
@@ -107,15 +114,15 @@ var (
 
 	formatFunc FormatLog = func(fields LogFields, args ...interface{}) []interface{} {
 		if 0 != len(args) {
-			args[0] = fmt.Sprintf("%s\t[%s] %v", fields.UUID, fields.Title, args[0])
+			args[0] = fmt.Sprintf("%s\t%s:%d\t[%s] %v", fields.UUID, fields.FilePath, fields.Line, fields.Title, args[0])
 			return append([]interface{}{fields.Level}, args...)
 		} else {
-			return append([]interface{}{fields.Level}, fmt.Sprintf("%s\t[%s]", fields.UUID, fields.Title))
+			return append([]interface{}{fields.Level}, fmt.Sprintf("%s\t%s:%d\t[%s]", fields.UUID, fields.FilePath, fields.Line, fields.Title))
 		}
 	}
 
 	formatFuncF FormatLogF = func(fields LogFields, format string, args ...interface{}) (string, []interface{}) {
-		return fmt.Sprintf("%v\t%s\t[%s] %v", fields.Level, fields.UUID, fields.Title, format), args
+		return fmt.Sprintf("%v\t%s\t%s:%d\t[%s] %v", fields.Level, fields.UUID, fields.FilePath, fields.Line, fields.Title, format), args
 	}
 )
 
@@ -195,8 +202,11 @@ func SetLocalTrigger(ctx context.Context, occurLevel, outLevel logLevel) {
 	//fmt.Println("outLevel", (*rootCallStack).OwnOccurLev, (*rootCallStack).OwnOutLev, occurLevel, outLevel)
 }
 
-func SetFuncSignal(ctx context.Context, s string) context.Context {
-	var nowCallStack = traceInfo{}
+func SetFuncSignal(ctx context.Context, s string, depth int) context.Context {
+	var (
+		_, file, line, _ = runtime.Caller(depth)
+		nowCallStack     = traceInfo{FilePath: file, Line: line, FuncName: s}
+	)
 
 	root := ctx.Value(ctxKeyName)
 	if nil == root {
@@ -255,7 +265,17 @@ func Log(ctx context.Context, level logLevel, args ...interface{}) {
 		(*rootCallStack).MaxLevel = level
 	}
 
-	var value = []interface{}{level, logTypeSprint}
+	var (
+		value     = []interface{}{level, logTypeSprint}
+		logFields = LogFields{
+			UUID:     uuid.New().String(),
+			Level:    levelString[level],
+			Title:    subCallStack.Title,
+			FuncName: subCallStack.FuncName,
+			FilePath: subCallStack.FilePath,
+			Line:     subCallStack.Line,
+		}
+	)
 	//if 0 != len(args) {
 	//	args[0] = fmt.Sprintf("[%s] %v", subCallStack.Title, args[0])
 	//	value = append(value, args...)
@@ -263,7 +283,7 @@ func Log(ctx context.Context, level logLevel, args ...interface{}) {
 	//	value = append(value, fmt.Sprintf("[%s]", subCallStack.Title))
 	//}
 
-	value = append(value, formatFunc(LogFields{uuid.New().String(), levelString[level], subCallStack.Title}, args...)...)
+	value = append(value, formatFunc(logFields, args...)...)
 
 	(*rootCallStack).DoList = append((*rootCallStack).DoList, value)
 }
@@ -271,7 +291,7 @@ func Log(ctx context.Context, level logLevel, args ...interface{}) {
 func Logf(ctx context.Context, level logLevel, format string, args ...interface{}) {
 	root := ctx.Value(ctxKeyName)
 	if nil == root {
-		f, a := formatFuncF(LogFields{uuid.New().String(), levelString[level], "-"}, format, args...)
+		f, a := formatFuncF(LogFields{UUID: uuid.New().String(), Level: levelString[level], Title: "-"}, format, args...)
 		lmfLog(level, f, a...)
 		return
 	}
@@ -289,7 +309,16 @@ func Logf(ctx context.Context, level logLevel, format string, args ...interface{
 	}
 
 	var (
-		f, a  = formatFuncF(LogFields{uuid.New().String(), levelString[level], subCallStack.Title}, format, args...)
+		logFields = LogFields{
+			UUID:     uuid.New().String(),
+			Level:    levelString[level],
+			Title:    subCallStack.Title,
+			FuncName: subCallStack.FuncName,
+			FilePath: subCallStack.FilePath,
+			Line:     subCallStack.Line,
+		}
+
+		f, a  = formatFuncF(logFields, format, args...)
 		value = []interface{}{level, logTypeSprintF, f}
 	)
 	//if 0 != len(args) {

@@ -32,7 +32,7 @@ func fffF(format string, args ...interface{}) {
 }
 
 func AAA(ctx context.Context) {
-	ctx = SetFuncSignal(ctx, "A")
+	ctx = SetFuncSignal(ctx, "A", 1)
 	SetLocalTrigger(ctx, Error, Debug)
 	defer CatchInfo(ctx)
 	Log(ctx, Debug)
@@ -42,21 +42,21 @@ func AAA(ctx context.Context) {
 }
 
 func B(ctx context.Context) {
-	ctx = SetFuncSignal(ctx, "B")
+	ctx = SetFuncSignal(ctx, "B", 1)
 	Log(ctx, Debug, "Begin B. %s", "la~la~la~")
 	C(ctx)
 	Log(ctx, Warning, "End B. %s", "biu~biu~biu~")
 }
 
 func C(ctx context.Context) {
-	ctx = SetFuncSignal(ctx, "C")
+	ctx = SetFuncSignal(ctx, "C", 1)
 	Log(ctx, Error, "Begin C. %s", "la~la~la~")
 
 	Log(ctx, Warning, "End C. %s", "biu~biu~biu~")
 }
 
 func AAAF(ctx context.Context) {
-	ctx = SetFuncSignal(ctx, "AF")
+	ctx = SetFuncSignal(ctx, "AF", 1)
 	SetLocalTrigger(ctx, Error, Debug)
 	defer CatchInfo(ctx)
 	Logf(ctx, Debug, "")
@@ -66,14 +66,14 @@ func AAAF(ctx context.Context) {
 }
 
 func BF(ctx context.Context) {
-	ctx = SetFuncSignal(ctx, "BF")
+	ctx = SetFuncSignal(ctx, "BF", 1)
 	Logf(ctx, Debug, "Begin BF. %s", "la~la~la~")
 	CF(ctx)
 	Logf(ctx, Warning, "End BF. %s", "biu~biu~biu~")
 }
 
 func CF(ctx context.Context) {
-	ctx = SetFuncSignal(ctx, "CF")
+	ctx = SetFuncSignal(ctx, "CF", 1)
 	Logf(ctx, Error, "Begin CF. %s", "la~la~la~")
 
 	Logf(ctx, Warning, "End CF. %s", "biu~biu~biu~")
@@ -84,7 +84,7 @@ func LogImmediately() {
 }
 
 func LogImmediatelyTitle() {
-	ctx := SetFuncSignal(context.Background(), "LogImmediatelyTitle")
+	ctx := SetFuncSignal(context.Background(), "LogImmediatelyTitle", 1)
 	Log(ctx, Info, "la~la~la~", "biu~biu~biu~")
 }
 
