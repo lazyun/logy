@@ -1,4 +1,4 @@
-module logy
+module github.com/lazyun/logy
 
 go 1.12
 
