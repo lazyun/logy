@@ -268,7 +268,7 @@ func Log(ctx context.Context, level logLevel, args ...interface{}) {
 	var (
 		value     = []interface{}{level, logTypeSprint}
 		logFields = LogFields{
-			UUID:     uuid.New().String(),
+			UUID:     rootCallStack.UUID,
 			Level:    levelString[level],
 			Title:    subCallStack.Title,
 			FuncName: subCallStack.FuncName,
