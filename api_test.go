@@ -39,6 +39,7 @@ func AAA(ctx context.Context) {
 	Log(ctx, Info, "Begin A. %s", "la~la~la~")
 	B(ctx)
 	Log(ctx, Warning, "End A. %s", "biu~biu~biu~")
+	fmt.Println("uuid", GetUUID(ctx))
 }
 
 func B(ctx context.Context) {

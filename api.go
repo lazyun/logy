@@ -436,3 +436,13 @@ func lmfLog(level logLevel, format string, args ...interface{}) {
 		}
 	}
 }
+
+func GetUUID(ctx context.Context) string {
+	root := ctx.Value(ctxKeyName)
+	if nil == root {
+		return ""
+	}
+
+	rootCallStack := root.(*traceRoot)
+	return rootCallStack.UUID
+}
