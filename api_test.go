@@ -3,7 +3,9 @@ package logy
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
+	"time"
 )
 
 func init() {
@@ -34,8 +36,38 @@ func fffF(format string, args ...interface{}) {
 func AAA(ctx context.Context) {
 	ctx = SetFuncSignal(ctx, "A", 1)
 	SetLocalTrigger(ctx, Error, Debug)
+	RegisterLogFormat(func(fields LogFields, args ...interface{}) []interface{} {
+		value := []interface{}{
+			fmt.Sprintf("%s %v <%s><%s><%s>[%s]",
+				time.Now().Format("2006-01-02 15:04:05.999"),
+				fields.Level,
+				strings.TrimPrefix(fields.FilePath, "/root/janus-api/src/janus/"),
+				fields.FuncName,
+				fields.UUID,
+				fields.Title),
+		}
+
+		if 0 == len(args) {
+			return value
+		} else {
+			return append(value, args...)
+		}
+	})
+
+	RegisterLogFormatF(func(fields LogFields, format string, args ...interface{}) (string, []interface{}) {
+		return fmt.Sprintf("%s %v <%s><%s><%s>[%s]%v",
+			time.Now().Format("2006-01-02 15:04:05.999"),
+			fields.Level,
+			strings.TrimPrefix(fields.FilePath, "/root/janus-api/src/janus/"),
+			fields.FuncName,
+			fields.UUID,
+			fields.Title,
+			format), args
+	})
+
 	defer CatchInfo(ctx)
 	Log(ctx, Debug)
+	Log(ctx, Debug, "123")
 	Log(ctx, Info, "Begin A. %s", "la~la~la~")
 	B(ctx)
 	Log(ctx, Warning, "End A. %s", "biu~biu~biu~")
@@ -107,4 +139,12 @@ func TestLogImmediately(t *testing.T) {
 
 func TestLogImmediatelyTitle(t *testing.T) {
 	LogImmediatelyTitle()
+}
+
+func Test123(t *testing.T) {
+	var (
+		a = []int{1, 2, 3, 4}
+	)
+
+	t.Log(a[1:])
 }
