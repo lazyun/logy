@@ -33,9 +33,10 @@ func fffF(format string, args ...interface{}) {
 
 func AAA(ctx context.Context) {
 	ctx = SetFuncSignal(ctx, "A", 1)
-	SetLocalTrigger(ctx, Error, Debug)
+	SetLocalTrigger(ctx, Error, Info)
 	defer CatchInfo(ctx)
 	Log(ctx, Debug)
+	Log(ctx, Debug, "debug")
 	Log(ctx, Info, "Begin A. %s", "la~la~la~")
 	B(ctx)
 	Log(ctx, Warning, "End A. %s", "biu~biu~biu~")

@@ -224,8 +224,8 @@ func SetFuncSignal(ctx context.Context, s string, depth int) context.Context {
 			[][]interface{}{},
 			[]*traceInfo{},
 			false,
-			Debug,
-			Debug,
+			occurLev,
+			outLev,
 		}
 
 		ctx = context.WithValue(ctx, ctxKeyName, &r)
@@ -263,6 +263,10 @@ func Log(ctx context.Context, level logLevel, args ...interface{}) {
 
 	if level > (*rootCallStack).MaxLevel {
 		(*rootCallStack).MaxLevel = level
+	}
+
+	if level < (*rootCallStack).OwnOutLev {
+		return
 	}
 
 	var (
@@ -306,6 +310,10 @@ func Logf(ctx context.Context, level logLevel, format string, args ...interface{
 
 	if level > (*rootCallStack).MaxLevel {
 		(*rootCallStack).MaxLevel = level
+	}
+
+	if level < (*rootCallStack).OwnOutLev {
+		return
 	}
 
 	var (
@@ -360,6 +368,10 @@ func CatchInfo(ctx context.Context) {
 	//}
 
 	for _, value := range (*rootCallStack).DoList {
+		if 2 > len(value) {
+			continue
+		}
+
 		level := value[0].(logLevel)
 		logFormatType := value[1].(int)
 
