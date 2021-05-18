@@ -16,6 +16,15 @@ func AdjustAddUUID(enable bool) {
 	AddUUID = enable
 }
 
+func RegisterWithLogger(logger *logrus.Logger) *logrus.Entry {
+	entry := logrus.NewEntry(logger)
+	if AddUUID {
+		entry = setUUIDToEntry(entry)
+	}
+
+	return entry
+}
+
 func RegisterTitleWithLogger(funcName string, logger *logrus.Logger) *logrus.Entry {
 	entry := logrus.NewEntry(logger)
 	if AddUUID {
