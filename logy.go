@@ -62,5 +62,9 @@ func GetFileName(discardBefore string, dep int) string {
 	}
 
 	index := strings.Index(file, discardBefore)
+	if index < 0 {
+		return file
+	}
+
 	return file[index:]
 }
