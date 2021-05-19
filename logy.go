@@ -51,8 +51,8 @@ func GetUUID(entry *logrus.Entry) string {
 	return ""
 }
 
-func GetFileName(discardBefore string) string {
-	_, file, _, ok := runtime.Caller(1)
+func GetFileName(discardBefore string, dep int) string {
+	_, file, _, ok := runtime.Caller(1 + dep)
 	if !ok {
 		return ""
 	}
